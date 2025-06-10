@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Keuangan Harian</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            margin: 5px;
+            font-size: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 6px;
+            text-align: center;
+        }
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        input, select {
+            width: 95%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-clear {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-save {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-sync {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-update {
+            background-color: #ffc107;
+            color: black;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+            .dashboard {
+                flex-direction: column;
+                align-items: center;
+            }
+            .box {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .form-container {
+                flex-direction: column;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+            table {
+                font-size: 10px;
+            }
+            th, td {
+                padding: 5px;
+            }
+        }
+
+        .tagline {
+            text-align: center;
+            font-size: 14px;
+            color: green;
+            font-style: italic;
+        }
+        h2 {
+            text-align: center;
+            color: green;
+        }
+        .btn-delete {
+            background-color: #ff9800; 
+            color: white;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        .icon-btn i {
+            color: #007bff;
+            margin-right: 5px;
+        }
+
+        .icon-btn.delete i {
+            color: #dc3545;
+        }
+
+        .settings-form {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+        }
+
+        .btn-settings {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 101;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .sync-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .sync-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .sync-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .github-config {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .github-config h4 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .github-config input {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .sync-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .sync-controls button {
+            flex: 1;
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        .install-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body onload="initApp()">
+    <button class="btn-settings" onclick="toggleSettings(event)">
+        <i class="fas fa-cogs"></i>
+    </button>
+    
+    <div class="settings-form" id="settingsForm">
+        <div class="github-config">
+            <h4><i class="fab fa-github"></i> Konfigurasi GitHub</h4>
+            <input type="text" id="githubToken" placeholder="GitHub Token" value="">
+            <input type="text" id="githubRepo" placeholder="username/repository" value="">
+            <input type="text" id="githubFile" placeholder="data.json" value="data.json">
+            <button onclick="saveGithubConfig()">Simpan Konfigurasi</button>
+        </div>
+        
+        <div class="github-config">
+            <h4><i class="fas fa-file-export"></i> Backup & Restore</h4>
+            <button onclick="backupData()" class="btn-sync" style="margin-bottom: 10px;">
+                <i class="fas fa-download"></i> Buat Backup
+            </button>
+            <input type="file" id="restoreFile" accept=".json" style="display: none;" onchange="restoreData(event)">
+            <button onclick="document.getElementById('restoreFile').click()" class="btn-sync">
+                <i class="fas fa-upload"></i> Restore Backup
+            </button>
+        </div>
+        
+        <div class="sync-controls">
+            <button onclick="syncFromGithub()" class="btn-sync">
+                <i class="fas fa-download"></i> Ambil Data
+            </button>
+            <button onclick="syncToGithub()" class="btn-sync">
+                <i class="fas fa-upload"></i> Simpan ke GitHub
+            </button>
+        </div>
+        
+        <div id="syncStatus"></div>
+        
+        <hr>
+        
+        <label for="customTitle">Judul Laporan:</label>
+        <input type="text" id="customTitle" placeholder="Masukkan judul baru">
+        <button onclick="saveTitle()">Simpan Judul</button>
+        <button onclick="closeSettings()">Tutup</button>
+    </div>
+
+    <div class="container">
+        <h2 id="laporanTitle" style="text-align: center;">LAPORAN KEUANGAN HARIAN</h2>
+        <p class="tagline">Mengelola keuangan Anda dengan lebih baik</p>
+        
+        <div class="dashboard">
+            <div class="box">Pemasukan: Rp <span id="totalPemasukan">0</span></div>
+            <div class="box">Pengeluaran: Rp <span id="totalPengeluaran">0</span></div>
+            <div class="box">Saldo Akhir: Rp <span id="saldoAkhir">0</span></div>
+        </div>
+        
+        <h3 style="text-align: center;">Tambah Transaksi</h3>
+        <div class="form-container">
+            <div class="form-group">
+                <label for="tanggal">Tanggal:</label>
+                <input type="date" id="tanggal">
+            </div>
+            <div class="form-group">
+                <label for="keterangan">Keterangan:</label>
+                <input type="text" id="keterangan" placeholder="Masukkan keterangan transaksi">
+            </div>
+            <div class="form-group">
+                <label for="tipe">Tipe Transaksi:</label>
+                <select id="tipe">
+                    <option value="pemasukan">Pemasukan</option>
+                    <option value="pengeluaran">Pengeluaran</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="jumlah">Jumlah (Rp):</label>
+                <input type="number" id="jumlah" placeholder="0">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-add" onclick="tambahTransaksi()">Tambah Transaksi</button>
+            <button class="btn-clear" onclick="clearData()">Hapus Semua Data</button>
+            <button class="btn-save" onclick="simpanPDF()">Simpan PDF</button>
+            <button class="btn-update" onclick="updateTransaksi()">Update Transaksi</button>
+        </div>
+      
+        <h3 style="text-align: center;">Data Keuangan</h3>
+       
+        <div class="form-group">
+            <label for="searchDate"><strong>Cari berdasarkan tanggal:</strong></label>
+            <input type="date" id="searchDate" oninput="filterData()">
+        </div>
+        
+        <table id="laporanTable">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Keterangan</th>
+                    <th>Pemasukan (Rp)</th>
+                    <th>Pengeluaran (Rp)</th>
+                    <th>Saldo (Rp)</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="data-keuangan"></tbody>
+        </table>
+    </div>
+    
+    <button id="installButton" class="install-btn">
+        <i class="fas fa-download"></i> Install Aplikasi
+    </button>
+    
+    <div class="toast" id="toast"></div>
+    
+    <footer style="text-align: center; margin-top: 20px; font-size: 10px; color: #555;">
+        © <span id="year"></span> Laporan Keuangan Harian Oleh Ivan Hadian. Semua Hak Cipta Dilindungi.
+    </footer>
+
+    <script>
+        // Global variables
+        let githubConfig = {
+            token: '',
+            repo: '',
+            file: 'data.json'
+        };
+        
+        let indexEdit = -1;
+        let deferredPrompt = null;
+
+        // Initialize application
+        function initApp() {
+            setDefaultDate();
+            loadGithubConfig();
+            loadData();
+            adjustTableForMobile();
+            setupServiceWorker();
+            setupInstallPrompt();
+            document.getElementById("year").textContent = new Date().getFullYear();
+            
+            // Add event listeners
+            document.getElementById('jumlah').addEventListener('input', function() {
+                if (this.value < 0) {
+                    this.value = '';
+                    showToast('Jumlah tidak boleh negatif');
+                }
+            });
+            
+            window.addEventListener('resize', adjustTableForMobile);
+            window.addEventListener('online', handleOnlineStatus);
+            window.addEventListener('offline', handleOnlineStatus);
+            
+            // Check for sample data
+            if (!localStorage.getItem('keuangan') && !localStorage.getItem('dismissedSampleData')) {
+                if (confirm('Apakah Anda ingin menambahkan data contoh untuk memulai?')) {
+                    addSampleData();
+                } else {
+                    localStorage.setItem('dismissedSampleData', 'true');
+                }
+            }
+        }
+
+        // GitHub Sync Functions
+        function loadGithubConfig() {
+            const saved = JSON.parse(localStorage.getItem('githubConfig')) || {};
+            githubConfig = { ...githubConfig, ...saved };
+            
+            document.getElementById('githubToken').value = githubConfig.token || '';
+            document.getElementById('githubRepo').value = githubConfig.repo || '';
+            document.getElementById('githubFile').value = githubConfig.file || 'data.json';
+        }
+
+        function saveGithubConfig() {
+            githubConfig.token = document.getElementById('githubToken').value;
+            githubConfig.repo = document.getElementById('githubRepo').value;
+            githubConfig.file = document.getElementById('githubFile').value || 'data.json';
+            
+            localStorage.setItem('githubConfig', JSON.stringify(githubConfig));
+            showSyncStatus('Konfigurasi GitHub berhasil disimpan!', 'success');
+        }
+
+        async function syncToGithub() {
+            if (!githubConfig.token || !githubConfig.repo) {
+                showSyncStatus('Harap isi konfigurasi GitHub terlebih dahulu!', 'error');
+                return;
+            }
+
+            try {
+                document.body.classList.add('loading');
+                showSyncStatus('Mengunggah data ke GitHub...', 'info');
+
+                const data = {
+                    keuangan: JSON.parse(localStorage.getItem('keuangan')) || [],
+                    customTitle: localStorage.getItem('customTitle') || '',
+                    lastSync: new Date().toISOString(),
+                    device: navigator.userAgent
+                };
+
+                // Get current file SHA if exists
+                let sha = null;
+                try {
+                    const getResponse = await fetch(`https://api.github.com/repos/${githubConfig.repo}/contents/${githubConfig.file}`, {
+                        headers: {
+                            'Authorization': `token ${githubConfig.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (getResponse.ok) {
+                        const fileData = await getResponse.json();
+                        sha = fileData.sha;
+                    }
+                } catch (e) {
+                    // File doesn't exist, which is fine
+                }
+
+                // Upload/update file
+                const response = await fetch(`https://api.github.com/repos/${githubConfig.repo}/contents/${githubConfig.file}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${githubConfig.token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        message: `Update financial data - ${new Date().toLocaleString('id-ID')}`,
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+                        sha: sha
+                    })
+                });
+
+                if (response.ok) {
+                    showSyncStatus('Data berhasil disimpan ke GitHub!', 'success');
+                    localStorage.setItem('lastSyncToGithub', new Date().toISOString());
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Gagal mengunggah ke GitHub');
+                }
+            } catch (error) {
+                console.error('Sync to GitHub error:', error);
+                showSyncStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        async function syncFromGithub() {
+            if (!githubConfig.token || !githubConfig.repo) {
+                showSyncStatus('Harap isi konfigurasi GitHub terlebih dahulu!', 'error');
+                return;
+            }
+
+            try {
+                document.body.classList.add('loading');
+                showSyncStatus('Mengunduh data dari GitHub...', 'info');
+
+                const response = await fetch(`https://api.github.com/repos/${githubConfig.repo}/contents/${githubConfig.file}`, {
+                    headers: {
+                        'Authorization': `token ${githubConfig.token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('File data tidak ditemukan di GitHub');
+                    }
+                    throw new Error('Gagal mengunduh dari GitHub');
+                }
+
+                const fileData = await response.json();
+                const content = JSON.parse(decodeURIComponent(escape(atob(fileData.content)));
+
+                // Merge data
+                if (content.keuangan) {
+                    const localData = JSON.parse(localStorage.getItem('keuangan')) || [];
+                    const mergedData = mergeFinancialData(localData, content.keuangan);
+                    localStorage.setItem('keuangan', JSON.stringify(mergedData));
+                }
+
+                if (content.customTitle) {
+                    localStorage.setItem('customTitle', content.customTitle);
+                    document.getElementById('laporanTitle').innerText = content.customTitle;
+                }
+
+                localStorage.setItem('lastSyncFromGithub', new Date().toISOString());
+                loadData();
+                showSyncStatus('Data berhasil diunduh dari GitHub!', 'success');
+            } catch (error) {
+                console.error('Sync from GitHub error:', error);
+                showSyncStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        function mergeFinancialData(localData, remoteData) {
+            // Create a map for efficient lookup
+            const localMap = new Map();
+            localData.forEach((item, index) => {
+                const key = `${item.tanggal}-${item.keterangan}-${item.jumlah}-${item.tipe}`;
+                localMap.set(key, { ...item, localIndex: index });
+            });
+
+            const remoteMap = new Map();
+            remoteData.forEach(item => {
+                const key = `${item.tanggal}-${item.keterangan}-${item.jumlah}-${item.tipe}`;
+                remoteMap.set(key, item);
+            });
+
+            // Merge: take all unique items from both sources
+            const merged = [];
+            const processedKeys = new Set();
+
+            // Add all local items
+            localData.forEach(item => {
+                const key = `${item.tanggal}-${item.keterangan}-${item.jumlah}-${item.tipe}`;
+                merged.push(item);
+                processedKeys.add(key);
+            });
+
+            // Add remote items that don't exist locally
+            remoteData.forEach(item => {
+                const key = `${item.tanggal}-${item.keterangan}-${item.jumlah}-${item.tipe}`;
+                if (!processedKeys.has(key)) {
+                    merged.push(item);
+                }
+            });
+
+            // Sort by date
+            return merged.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+        }
+
+        function autoSyncToGithub() {
+            if (githubConfig.token && githubConfig.repo) {
+                setTimeout(() => {
+                    syncToGithub();
+                }, 2000);
+            }
+        }
+
+        // Core Financial Functions
+        function loadData() {
+            const savedTitle = localStorage.getItem("customTitle");
+            if (savedTitle) {
+                document.getElementById("laporanTitle").innerText = savedTitle;
+                document.getElementById("customTitle").value = savedTitle;
+            }
+            
+            let data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            data.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+            let saldoAkhir = 0;
+            let pemasukan = 0;
+            let pengeluaran = 0;
+            let tableBody = "";
+
+            data.forEach((item, index) => {
+                const pemasukanVal = item.tipe === "pemasukan" ? item.jumlah : 0;
+                const pengeluaranVal = item.tipe === "pengeluaran" ? item.jumlah : 0;
+                saldoAkhir += pemasukanVal - pengeluaranVal;
+                pemasukan += pemasukanVal;
+                pengeluaran += pengeluaranVal;
+
+                tableBody += `
+                    <tr>
+                        <td>${item.tanggal}</td>
+                        <td>${item.keterangan}</td>
+                        <td>${pemasukanVal.toLocaleString()}</td>
+                        <td>${pengeluaranVal.toLocaleString()}</td>
+                        <td>${saldoAkhir.toLocaleString()}</td>
+                        <td>
+                            <button onclick="editTransaksi(${index})" class="icon-btn">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="hapusTransaksi(${index})" class="icon-btn delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            document.getElementById("data-keuangan").innerHTML = tableBody;
+            document.getElementById("saldoAkhir").textContent = saldoAkhir.toLocaleString();
+            document.getElementById("totalPemasukan").textContent = pemasukan.toLocaleString();
+            document.getElementById("totalPengeluaran").textContent = pengeluaran.toLocaleString();
+        }
+        
+        function tambahTransaksi() {
+            const tanggal = document.getElementById("tanggal").value;
+            const keterangan = document.getElementById("keterangan").value.trim();
+            const tipe = document.getElementById("tipe").value;
+            const jumlah = parseFloat(document.getElementById("jumlah").value) || 0;
+            
+            if (!tanggal || !keterangan || jumlah <= 0) {
+                showToast("Harap isi semua kolom dengan benar");
+                return;
+            }
+            
+            let data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            data.push({ tanggal, keterangan, tipe, jumlah });
+            localStorage.setItem("keuangan", JSON.stringify(data));
+            
+            showToast("Transaksi berhasil ditambahkan!");
+            loadData();
+            
+            // Reset form
+            document.getElementById("keterangan").value = "";
+            document.getElementById("jumlah").value = "";
+            document.getElementById("keterangan").focus();
+            
+            autoSyncToGithub();
+        }
+
+        function editTransaksi(index) {
+            const data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            const transaksi = data[index];
+            
+            if (confirm("Apakah Anda yakin ingin mengedit data ini?")) {
+                document.getElementById("tanggal").value = transaksi.tanggal;
+                document.getElementById("keterangan").value = transaksi.keterangan;
+                document.getElementById("tipe").value = transaksi.tipe;
+                document.getElementById("jumlah").value = transaksi.jumlah;
+                indexEdit = index;
+                
+                // Scroll to form
+                document.getElementById("keterangan").scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function updateTransaksi() {
+            if (indexEdit === -1) {
+                showToast("Pilih transaksi yang ingin diperbarui!");
+                return;
+            }
+
+            const data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            const tanggal = document.getElementById("tanggal").value;
+            const keterangan = document.getElementById("keterangan").value.trim();
+            const tipe = document.getElementById("tipe").value;
+            const jumlah = parseFloat(document.getElementById("jumlah").value) || 0;
+
+            if (!tanggal || !keterangan || jumlah <= 0) {
+                showToast("Harap isi semua kolom dengan benar");
+                return;
+            }
+
+            data[indexEdit] = { tanggal, keterangan, tipe, jumlah };
+            localStorage.setItem("keuangan", JSON.stringify(data));
+
+            indexEdit = -1;
+            document.getElementById("tanggal").value = formatDate(new Date());
+            document.getElementById("keterangan").value = "";
+            document.getElementById("tipe").value = "pengeluaran";
+            document.getElementById("jumlah").value = "";
+
+            showToast("Transaksi berhasil diperbarui!");
+            loadData();
+            autoSyncToGithub();
+        }
+
+        function hapusTransaksi(index) {
+            const data = JSON.parse(localStorage.getItem("keuangan")) || [];
+
+            if (confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) {
+                data.splice(index, 1);
+                localStorage.setItem("keuangan", JSON.stringify(data));
+                showToast("Transaksi berhasil dihapus");
+                loadData();
+                autoSyncToGithub();
+            }
+        }
+
+        function clearData() {
+            if (confirm("Apakah Anda yakin ingin menghapus semua data?")) {
+                localStorage.removeItem("keuangan");
+                showToast("Semua data berhasil dihapus");
+                loadData();
+                autoSyncToGithub();
+            }
+        }
+
+        function filterData() {
+            const searchDate = document.getElementById("searchDate").value;
+            let data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            let saldoAkhir = 0;
+            let pemasukan = 0;
+            let pengeluaran = 0;
+            let tableBody = "";
+
+            data.forEach((item, index) => {
+                if (searchDate === "" || item.tanggal === searchDate) {
+                    const pemasukanVal = item.tipe === "pemasukan" ? item.jumlah : 0;
+                    const pengeluaranVal = item.tipe === "pengeluaran" ? item.jumlah : 0;
+                    saldoAkhir += pemasukanVal - pengeluaranVal;
+                    pemasukan += pemasukanVal;
+                    pengeluaran += pengeluaranVal;
+
+                    tableBody += `
+                        <tr>
+                            <td>${item.tanggal}</td>
+                            <td>${item.keterangan}</td>
+                            <td>${pemasukanVal.toLocaleString()}</td>
+                            <td>${pengeluaranVal.toLocaleString()}</td>
+                            <td>${saldoAkhir.toLocaleString()}</td>
+                            <td>
+                                <button onclick="editTransaksi(${index})" class="icon-btn">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="hapusTransaksi(${index})" class="icon-btn delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                }
+            });
+
+            document.getElementById("data-keuangan").innerHTML = tableBody;
+        }
+
+        // PDF Export Function
+        function simpanPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let data = JSON.parse(localStorage.getItem("keuangan")) || [];
+            
+            if (data.length === 0) {
+                showToast("Tidak ada data untuk disimpan!");
+                return;
+            }
+
+            data.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+            const firstDate = new Date(data[0].tanggal);
+            const lastDate = new Date(data[data.length - 1].tanggal);
+
+            function formatDateDisplay(date) {
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
+                return `${day} ${getMonthName(month)} ${year}`;
+            }
+
+            function getMonthName(monthNumber) {
+                const months = [
+                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                ];
+                return months[monthNumber - 1];
+            }
+
+            const title = document.getElementById("laporanTitle").innerText;
+            const fullTitle = `${title}\nPeriode: ${formatDateDisplay(firstDate)} - ${formatDateDisplay(lastDate)}`;
+
+            doc.setFontSize(14);
+            doc.text(fullTitle, doc.internal.pageSize.width / 2, 15, { align: "center" });
+
+            const transaksiData = [];
+            let saldoKumulatif = 0;
+
+            for (let i = 0; i < data.length; i++) {
+                const rowData = [];
+                rowData.push(data[i].tanggal);
+                rowData.push(data[i].keterangan);
+                rowData.push(data[i].tipe === "pemasukan" ? data[i].jumlah.toLocaleString() : "");
+                rowData.push(data[i].tipe === "pengeluaran" ? data[i].jumlah.toLocaleString() : "");
+
+                if (data[i].tipe === "pemasukan") {
+                    saldoKumulatif += data[i].jumlah;
+                } else if (data[i].tipe === "pengeluaran") {
+                    saldoKumulatif -= data[i].jumlah;
+                }
+
+                rowData.push(saldoKumulatif.toLocaleString());
+                transaksiData.push(rowData);
+            }
+
+            doc.autoTable({
+                head: [['Tanggal', 'Keterangan', 'Pemasukan (Rp)', 'Pengeluaran (Rp)', 'Saldo (Rp)']],
+                body: transaksiData,
+                startY: 30,
+                margin: { top: 30 }
+            });
+
+            const totalPemasukan = document.getElementById("totalPemasukan").innerText;
+            const totalPengeluaran = document.getElementById("totalPengeluaran").innerText;
+            const saldoAkhir = document.getElementById("saldoAkhir").innerText;
+
+            const neracaData = [
+                ["Total Pemasukan", `Rp ${totalPemasukan}`],
+                ["Total Pengeluaran", `Rp ${totalPengeluaran}`],
+                ["Saldo Akhir", `Rp ${saldoAkhir}`]
+            ];
+
+            doc.autoTable({
+                head: [['Kategori', 'Jumlah']],
+                body: neracaData,
+                startY: doc.autoTable.previous.finalY + 20
+            });
+
+            const fileName = `Laporan Keuangan ${getMonthName(firstDate.getMonth() + 1)} ${firstDate.getFullYear()}.pdf`;
+            doc.save(fileName);
+            showToast("PDF berhasil disimpan!");
+        }
+
+        // Backup and Restore Functions
+        function backupData() {
+            const data = {
+                keuangan: JSON.parse(localStorage.getItem('keuangan')) || [],
+                customTitle: localStorage.getItem('customTitle') || '',
+                githubConfig: JSON.parse(localStorage.getItem('githubConfig')) || {},
+                lastBackup: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `financial_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Backup data berhasil dibuat!');
+        }
+
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!confirm('Restore data akan menggantikan data saat ini. Lanjutkan?')) {
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.keuangan) {
+                        localStorage.setItem('keuangan', JSON.stringify(data.keuangan));
+                    }
+                    
+                    if (data.customTitle) {
+                        localStorage.setItem('customTitle', data.customTitle);
+                        document.getElementById('laporanTitle').innerText = data.customTitle;
+                    }
+                    
+                    if (data.githubConfig) {
+                        localStorage.setItem('githubConfig', JSON.stringify(data.githubConfig));
+                        loadGithubConfig();
+                    }
+                    
+                    loadData();
+                    showToast('Data berhasil di-restore!');
+                    autoSyncToGithub();
+                } catch (error) {
+                    showToast('Error: File backup tidak valid', 'error');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset input
+            event.target.value = '';
+        }
+
+        // Settings Functions
+        function toggleSettings(event) {
+            event.stopPropagation();
+            const settingsForm = document.getElementById("settingsForm");
+            if (settingsForm.style.display === "flex") {
+                settingsForm.style.display = "none";
+            } else {
+                settingsForm.style.display = "flex";
+                loadGithubConfig();
+            }
+        }
+
+        function closeSettings() {
+            document.getElementById("settingsForm").style.display = "none";
+        }
+
+        function saveTitle() {
+            const newTitle = document.getElementById("customTitle").value.trim();
+            if (newTitle) {
+                localStorage.setItem("customTitle", newTitle);
+                document.getElementById("laporanTitle").innerText = newTitle;
+                showToast("Judul berhasil disimpan!");
+                autoSyncToGithub();
+                closeSettings();
+            } else {
+                showToast("Judul tidak boleh kosong!", "error");
+            }
+        }
+
+        // Helper Functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${year}-${month}-${day}`;
+        }
+
+        function setDefaultDate() {
+            const today = new Date();
+            document.getElementById('tanggal').value = formatDate(today);
+            document.getElementById('searchDate').value = formatDate(today);
+        }
+
+        function adjustTableForMobile() {
+            if (window.innerWidth <= 768) {
+                const table = document.getElementById('laporanTable');
+                if (table) {
+                    const headers = table.querySelectorAll('th');
+                    const cells = table.querySelectorAll('td');
+                    
+                    // Abbreviate headers
+                    if (headers.length >= 6) {
+                        headers[0].textContent = 'Tgl';
+                        headers[1].textContent = 'Ket.';
+                        headers[2].textContent = 'Masuk';
+                        headers[3].textContent = 'Keluar';
+                        headers[4].textContent = 'Saldo';
+                        headers[5].textContent = '';
+                    }
+                    
+                    // Shorten long text in cells
+                    cells.forEach(cell => {
+                        if (cell.cellIndex === 1 && cell.textContent.length > 15) { // Keterangan column
+                            cell.textContent = cell.textContent.substring(0, 12) + '...';
+                            cell.title = cell.textContent.replace('...', '');
+                        }
+                    });
+                }
+            }
+        }
+
+        function addSampleData() {
+            const today = formatDate(new Date());
+            const sampleData = [
+                {
+                    tanggal: today,
+                    keterangan: 'Gaji Bulanan',
+                    tipe: 'pemasukan',
+                    jumlah: 5000000
+                },
+                {
+                    tanggal: today,
+                    keterangan: 'Belanja Bulanan',
+                    tipe: 'pengeluaran',
+                    jumlah: 1500000
+                },
+                {
+                    tanggal: today,
+                    keterangan: 'Bayar Listrik',
+                    tipe: 'pengeluaran',
+                    jumlah: 500000
+                }
+            ];
+            
+            localStorage.setItem('keuangan', JSON.stringify(sampleData));
+            loadData();
+            showToast('Data contoh telah ditambahkan');
+        }
+
+        // UI Feedback Functions
+        function showSyncStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('syncStatus');
+            statusDiv.className = `sync-status sync-${type}`;
+            statusDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            // Set color based on type
+            if (type === 'error') {
+                toast.style.backgroundColor = '#dc3545';
+            } else if (type === 'success') {
+                toast.style.backgroundColor = '#28a745';
+            } else {
+                toast.style.backgroundColor = '#333';
+            }
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // PWA Functions
+        function setupServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            }
+        }
+
+        function setupInstallPrompt() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                const installButton = document.getElementById('installButton');
+                installButton.style.display = 'block';
+                
+                installButton.addEventListener('click', () => {
+                    installButton.style.display = 'none';
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            showToast('Aplikasi berhasil diinstall!', 'success');
+                        }
+                        deferredPrompt = null;
+                    });
+                });
+            });
+        }
+
+        // Network Status
+        function handleOnlineStatus() {
+            if (navigator.onLine) {
+                showSyncStatus('Anda kembali online. Data akan disinkronkan.', 'info');
+                if (githubConfig.token && githubConfig.repo) {
+                    syncFromGithub();
+                }
+            } else {
+                showSyncStatus('Anda sedang offline. Perubahan akan disimpan lokal.', 'info');
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Ctrl+S to save PDF
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                simpanPDF();
+            }
+            
+            // Ctrl+N to add new transaction
+            if (event.ctrlKey && event.key === 'n') {
+                event.preventDefault();
+                document.getElementById('keterangan').focus();
+            }
+            
+            // Escape to clear form
+            if (event.key === 'Escape') {
+                indexEdit = -1;
+                document.getElementById('keterangan').value = '';
+                document.getElementById('jumlah').value = '';
+                document.getElementById('tipe').value = 'pengeluaran';
+                setDefaultDate();
+            }
+        });
+
+        // Hide settings when clicking outside
+        document.addEventListener("click", function(event) {
+            const settingsForm = document.getElementById("settingsForm");
+            const settingsButton = document.querySelector(".btn-settings");
+
+            if (settingsForm && !settingsForm.contains(event.target) {
+                if (settingsButton && !settingsButton.contains(event.target)) {
+                    settingsForm.style.display = "none";
+                }
+            }
+        });
+    </script>
+</body>
+</html>
